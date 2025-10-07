@@ -12,8 +12,8 @@ RUN apt-get update && \
     gstreamer1.0-plugins-bad gstreamer1.0-libav gstreamer1.0-tools \
     libcairo2 wget unzip tini jq alsa-plugins-pulse font-droid \
     python3 xserver-xorg-video-intel intel-media-va-driver-non-free \
-    intel-gpu-tools libnvidia-decode libnvidia-encode mesa-va-drivers \
-    libasound2-plugins && \
+    intel-gpu-tools libnvidia-decode-550-server libnvidia-encode-550-server \
+    mesa-va-drivers libasound2-plugins && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/*
 RUN wget https://github.com/QuantumEntangledAndy/neolink/releases/download/v0.6.2/neolink_linux_x86_64_bullseye.zip && \
