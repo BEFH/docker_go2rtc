@@ -1,6 +1,9 @@
 FROM linuxserver/ffmpeg:amd64-latest
 ARG DEBIAN_FRONTEND=noninteractive
-RUN echo "deb http://archive.ubuntu.com/ubuntu $(lsb_release -sc) multiverse" >> /etc/apt/sources.list && \
+RUN apt-get update && \
+  apt-get install -y --no-install-recommends software-properties-common && \
+  add-apt-repository multiverse && \
+  apt-get purge -y software-properties-common && \
   apt-get update && \
   apt-get upgrade -y && \
   apt-get install -y --no-install-recommends --allow-downgrades \
