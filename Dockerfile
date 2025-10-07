@@ -10,7 +10,7 @@ RUN add-apt-repository multiverse && \
     libcairo2 wget unzip tini jq alsa-plugins-pulse font-droid \
     python3 xserver-xorg-video-intel intel-media-va-driver-non-free \
     intel-gpu-tools libnvidia-decode libnvidia-encode mesa-va-drivers \
-    libasound2-plugins 
+    libasound2-plugins && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/*
 RUN wget https://github.com/QuantumEntangledAndy/neolink/releases/download/v0.6.2/neolink_linux_x86_64_bullseye.zip && \
