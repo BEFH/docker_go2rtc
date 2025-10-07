@@ -1,0 +1,111 @@
+name: Check Container Digest
+
+on:
+  schedule:
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'     
+        required: false
+        default: 'warning'
+      tags:
+        description: 'Manual trigger'  
+
+jobs:
+  check-digest:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        image: ['stable', 'stable-tensorrt', 'stable-standard-arm64']
+    outputs:
+      stable: ${{ steps.compare.outputs.stable }}
+      stable-tensorrt: ${{ steps.compare.outputs.stable-tensorrt }}
+      stable-standard-arm64: ${{ steps.compare.outputs.stable-standard-arm64 }}
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Get current digest
+      id: digest
+      run: |
+        if [[ ${{ matrix.image }} == 'stable-standard-arm64' ]]; then
+          arch=arm64
+        else
+          arch=amd64
+        fi
+        dg=$(skopeo inspect docker://ghcr.io/blakeblackshear/frigate:${{ matrix.image }} --override-arch=$arch --override-os=linux | jq -r '.Digest')
+        echo "current_digest=$dg" >> $GITHUB_OUTPUT
+
+    - name: Compare digests
+      id: compare
+      run: |
+        digest_file="upstream_digests.txt"
+        tag=${{ matrix.image }}
+        new_digest=${{ steps.digest.outputs.current_digest }}
+
+        # Read previous digest from file
+        if [ -f "$digest_file" ]; then
+          old_digest=$(grep "^$tag=" "$digest_file" | cut -d '=' -f2)
+          if [ "$old_digest" != "$new_digest" ]; then
+            echo "Digest changed for $tag"
+            stat=changed
+          else
+            stat=unchanged
+          fi
+        else
+          echo "First run or $digest_file file not found"
+          stat=new
+        fi
+        echo "${tag}=${new_digest}=${stat}" >> $GITHUB_OUTPUT
+
+  aggregate-results:
+    needs: check-digest
+    runs-on: ubuntu-latest
+    outputs:
+      changed_map: ${{ steps.aggregate.outputs.changed_map }}
+      n_changed: ${{ steps.aggregate.outputs.n_changed }}
+    steps:
+    - name: Aggregate changed tags and digests
+      id: aggregate
+      run: |
+        dcheck='${{ toJSON(needs.check-digest.outputs) }}'
+        dcheck_changed=$(echo "$dcheck" | \
+          jq -r 'to_entries | map(select(.value | split("=")[1] == "changed" or split("=")[1] == "new"))')
+        echo "n_changed=$(echo "$dcheck_changed" | jq 'length')" >> $GITHUB_OUTPUT
+        echo $dcheck_changed | \
+          jq '{include: map({tag: .key, digest: (.value | split("=")[0])})} | @json' | \
+          sed 's/"$\|\\//g' | \
+          sed 's/^"/changed_map=/' >> $GITHUB_OUTPUT
+
+  call-publish:
+    needs: aggregate-results
+    if: ${{ needs.aggregate-results.outputs.n_changed > 0 }}
+    strategy:
+      matrix: ${{ fromJson(needs.aggregate-results.outputs.changed_map) }}
+    uses: ./.github/workflows/publish_docker.yaml
+    secrets: inherit
+    with:
+      digest: ${{ matrix.digest }}
+      tag: ${{ matrix.tag }}
+
+  commit-changes:
+    needs: [call-publish, check-digest]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: save
+      run: |
+        echo '${{ toJSON(needs.check-digest.outputs) }}' | \
+          jq -r 'to_entries | map("\(.key)=\(.value | split("=")[0])") | .[]' \
+          > upstream_digests.txt
+    - name: Commit and Push Changes
+      run: |
+        git config --global user.name "${{ github.actor }}"
+        git config --global user.email "${{ github.actor }}@users.noreply.github.com"
+        git add upstream_digests.txt
+        git commit -m "Update digests"
+        git push
