@@ -22,3 +22,12 @@ RUN wget https://github.com/QuantumEntangledAndy/neolink/releases/download/v0.6.
   rm -rf neolink_linux_x86_64_bullseye.zip neolink_linux_x86_64_bullseye && \
   wget -O /usr/local/bin/go2rtc https://github.com/AlexxIT/go2rtc/releases/latest/download/go2rtc_linux_amd64 && \
   chmod +x /usr/local/bin/go2rtc
+
+ENTRYPOINT ["/usr/bin/tini", "--"]
+VOLUME /config
+WORKDIR /config
+# https://github.com/NVIDIA/nvidia-docker/wiki/Installation-(Native-GPU-Support)
+ENV NVIDIA_VISIBLE_DEVICES all
+ENV NVIDIA_DRIVER_CAPABILITIES compute,video,utility
+
+CMD ["go2rtc", "-config", "/config/go2rtc.yaml"]
