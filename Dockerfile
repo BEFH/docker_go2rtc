@@ -1,4 +1,4 @@
-FROM ghcr.io/blakeblackshear/frigate:stable-tensorrt
+FROM linuxserver/ffmpeg:amd64-latest
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
   apt-get upgrade -y && \

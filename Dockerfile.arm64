@@ -1,4 +1,4 @@
-FROM ghcr.io/blakeblackshear/frigate:stable-standard-arm64
+FROM linuxserver/ffmpeg:arm64v8-latest
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
   apt-get upgrade -y && \

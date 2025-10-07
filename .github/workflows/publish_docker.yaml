@@ -35,29 +35,28 @@ jobs:
           fi
           tag='${{ inputs.tag }}'
           echo "Using the tag $tag"
-          nm="befh/frigate"
-          st="${tag#*-}"
-          if [[ $tag == "stable" ]]; then
-            echo "tags=$nm:latest,$nm:stable" >> $GITHUB_OUTPUT
-          elif grep -vq stable <<< $tag; then
-            echo "tags=$nm:latest-$st,$nm:stable-$st,$nm:$tag" >> $GITHUB_OUTPUT
+          nm="befh/go2rtc"
+          if [[ $tag == "amd64-latest" ]]; then
+            echo "tags=$nm:latest,$nm:amd64-latest,$nm:amd64" >> $GITHUB_OUTPUT
+          elif grep -q arm64 <<< $tag; then
+            echo "tags=$nm:arm64-latest,$nm:arm64,$nm:$tag" >> $GITHUB_OUTPUT
           else
-            echo "tags=$nm:latest-$st,$nm:$tag" >> $GITHUB_OUTPUT
+            echo "tags=$nm:$tag" >> $GITHUB_OUTPUT
           fi
           if grep -q arm64 <<< $tag; then
             echo "arch=linux/arm64" >> $GITHUB_OUTPUT
             mv Dockerfile.arm64 Dockerfile.orig
-            sed '1s/stable-standard-arm64/${{ inputs.tag }}/' Dockerfile.orig > Dockerfile
+            sed '1s/arm64v8-latest/${{ inputs.tag }}/' Dockerfile.orig > Dockerfile
           else
             echo "arch=linux/amd64" >> $GITHUB_OUTPUT
             mv Dockerfile Dockerfile.orig
-            sed '1s/stable-tensorrt/${{ inputs.tag }}/' Dockerfile.orig > Dockerfile
+            sed '1s/amd64-latest/${{ inputs.tag }}/' Dockerfile.orig > Dockerfile
           fi
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: befh/frigate
+          images: befh/go2rtc
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:

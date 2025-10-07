@@ -17,11 +17,10 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        image: ['stable', 'stable-tensorrt', 'stable-standard-arm64']
+        image: ['amd64-latest', 'arm64v8-latest']
     outputs:
-      stable: ${{ steps.compare.outputs.stable }}
-      stable-tensorrt: ${{ steps.compare.outputs.stable-tensorrt }}
-      stable-standard-arm64: ${{ steps.compare.outputs.stable-standard-arm64 }}
+      amd64-latest: ${{ steps.compare.outputs.amd64-latest }}
+      arm64v8-latest: ${{ steps.compare.outputs.arm64v8-latest }}
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -29,12 +28,12 @@ jobs:
     - name: Get current digest
       id: digest
       run: |
-        if [[ ${{ matrix.image }} == 'stable-standard-arm64' ]]; then
+        if [[ ${{ matrix.image }} == 'arm64v8-latest' ]]; then
           arch=arm64
         else
           arch=amd64
         fi
-        dg=$(skopeo inspect docker://ghcr.io/blakeblackshear/frigate:${{ matrix.image }} --override-arch=$arch --override-os=linux | jq -r '.Digest')
+        dg=$(skopeo inspect docker://linuxserver/ffmpeg:${{ matrix.image }} --override-arch=$arch --override-os=linux | jq -r '.Digest')
         echo "current_digest=$dg" >> $GITHUB_OUTPUT
 
     - name: Compare digests
